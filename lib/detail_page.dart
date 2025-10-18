@@ -29,6 +29,20 @@ class DetailPageState extends State<DetailPage>{
   void initState() {
     super.initState();
     vaccineCheck = widget.animal.vaccineStatus;
+    vaccineType = widget.animal.vaccineType;
+    vaccineTime = widget.animal.vaccineTime;
+
+    dewormCheck = widget.animal.dewormStatus;
+    dewormType = widget.animal.dewormType;
+    dewormTime = widget.animal.dewormTime;
+
+    fleaCheck = widget.animal.fleaStatus;
+    fleaType = widget.animal.fleaType;
+    fleaTime = widget.animal.fleaTime;
+
+    fecalCheck = widget.animal.fecalStatus;
+    fecalLocation = widget.animal.fecalLocation;
+    fecalTime = widget.animal.fecalTime;
   }
 
   final List<String> vaccineTypes = [
@@ -247,7 +261,23 @@ class DetailPageState extends State<DetailPage>{
           ),
       ),
       floatingActionButton: FloatingActionButton(
-      onPressed: () {widget.animal.vaccineStatus = vaccineCheck; Navigator.pop(context, widget.animal);},
+      onPressed: () {
+        widget.animal.vaccineStatus = vaccineCheck;
+        widget.animal.vaccineType = vaccineType;
+        widget.animal.vaccineTime = vaccineTime;
+
+        widget.animal.dewormStatus = dewormCheck;
+        widget.animal.dewormType = dewormType;
+        widget.animal.dewormTime = dewormTime;
+
+        widget.animal.fleaStatus = fleaCheck;
+        widget.animal.fleaType = fleaType;
+        widget.animal.fleaTime = fleaTime;
+
+        widget.animal.fecalStatus = fecalCheck;
+        widget.animal.fecalLocation = fecalLocation;
+        widget.animal.fecalTime = fecalTime; 
+        Navigator.pop(context, widget.animal);},
       backgroundColor: Colors.lightBlue,
       foregroundColor: Colors.white,
       child: Text('DONE'),
