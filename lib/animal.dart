@@ -44,6 +44,7 @@ class Animal {
   String? fecalLocation;
   DateTime? fecalTime;
 
+
    static DateTime? _parseDate(dynamic value) {
     if (value == null) return null;
     if (value is Timestamp) return value.toDate();

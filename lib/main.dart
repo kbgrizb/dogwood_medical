@@ -10,15 +10,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart'; 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart'; 
-
+import 'package:camera/camera.dart';
 import 'app_state.dart'; 
 import 'home_page.dart';
+
+late List<CameraDescription> _cameras;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
   options: DefaultFirebaseOptions.currentPlatform,
 );
+_cameras = await availableCameras();
   runApp(ChangeNotifierProvider(
     create: (context) => ApplicationState(),
     builder: ((context, child) => const App()),
