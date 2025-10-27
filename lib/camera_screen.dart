@@ -4,7 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({
@@ -38,6 +38,24 @@ class _CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
 
+
+  Future<String> recognizeText(File imageFile) async {
+    final inputImage = InputImage.fromFile(imageFile);
+    final textRecognizer = TextRecognizer();
+    final RecognizedText recognizedText = await textRecognizer.processImage(
+      inputImage,
+    );
+    await textRecognizer.close();
+    return recognizedText.text;
+  }
+
+  String extractNIK(String text) {
+    final regex = RegExp(r'\d+'); // Matches sequences of digits
+    final matches = regex.allMatches(text);
+    // Join all found digit sequences with commas, or modify logic as needed
+    return matches.map((m) => m.group(0)).join(', ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -49,10 +67,10 @@ class _CameraScreenState extends State<CameraScreen> {
     );
 
     _initializeControllerFuture = _controller.initialize().then((_) {
-  if (mounted) {
-    setState(() {});
-  }
-});
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -83,8 +101,10 @@ class _CameraScreenState extends State<CameraScreen> {
 
             // Get the directory to save the picture
             final directory = await getApplicationDocumentsDirectory();
-            final imagePath =
-                path.join(directory.path, 'image_${DateTime.now()}.png');
+            final imagePath = path.join(
+              directory.path,
+              'image_${DateTime.now()}.png',
+            );
 
             // Capture the image
             final XFile image = await _controller.takePicture();
@@ -92,9 +112,19 @@ class _CameraScreenState extends State<CameraScreen> {
             // Store the image in controller
             widget.imageController.setImage(File(image.path));
 
+            // Recognize OCR text
+            final recognizedText = await recognizeText(File(image.path));
+
+            // Extract NIK/NPWP
+            final number = extractNIK(recognizedText);
+
+            // Print or handle the number as needed
+            print('Recognized number: $number');
+
+            await _controller.dispose();
 
             if (!mounted) return;
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(number);
           } catch (e) {
             print('Error taking picture: $e');
           }

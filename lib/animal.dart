@@ -23,6 +23,8 @@ class Animal {
     required this.fecalStatus,
     this.fecalLocation,
     this.fecalTime,
+
+    this.photoUrl
     });
 
   String? id;
@@ -43,6 +45,8 @@ class Animal {
   bool fecalStatus;
   String? fecalLocation;
   DateTime? fecalTime;
+
+  String? photoUrl;
 
 
    static DateTime? _parseDate(dynamic value) {
@@ -67,6 +71,7 @@ class Animal {
       'fecalStatus': fecalStatus,
       'fecalLocation': fecalLocation,
       'fecalTime': fecalTime != null ? Timestamp.fromDate(fecalTime!) : null,
+      'photoUrl': photoUrl,
     };
   }
 

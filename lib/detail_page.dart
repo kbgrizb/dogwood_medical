@@ -6,6 +6,7 @@ import 'package:dogwood_app/animal.dart';
 import 'package:dogwood_app/camera_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class DetailPage extends StatefulWidget {
   final Animal animal;
@@ -29,6 +30,25 @@ class DetailPageState extends State<DetailPage> {
   DateTime? fleaTime;
   DateTime? fecalTime;
   final ImageController imageController = ImageController();
+  String? recognizedNumber;
+  TextEditingController _numberController = TextEditingController(text: '');
+
+  Future<String> recognizeText(File imageFile) async {
+    final inputImage = InputImage.fromFile(imageFile);
+    final textRecognizer = TextRecognizer();
+    final RecognizedText recognizedText = await textRecognizer.processImage(
+      inputImage,
+    );
+    await textRecognizer.close();
+    return recognizedText.text;
+  }
+
+  String extractNIK(String text) {
+    final regex = RegExp(r'\d+'); // Matches sequences of digits
+    final matches = regex.allMatches(text);
+    // Join all found digit sequences with commas, or modify logic as needed
+    return matches.map((m) => m.group(0)).join(', ');
+  }
 
   @override
   void initState() {
@@ -49,8 +69,14 @@ class DetailPageState extends State<DetailPage> {
     fecalLocation = widget.animal.fecalLocation;
     fecalTime = widget.animal.fecalTime;
 
+    _numberController = TextEditingController(text: recognizedNumber ?? '');
   }
 
+  @override
+  void dispose() {
+    _numberController.dispose();
+    super.dispose();
+  }
 
   Future<void> _saveToFirestore() async {
     final docRef = FirebaseFirestore.instance
@@ -76,8 +102,6 @@ class DetailPageState extends State<DetailPage> {
     } catch (e) {
       print('Error saving animal: $e');
     }
-
-    
   }
 
   Future<void> _deleteFromFirestore() async {
@@ -116,6 +140,7 @@ class DetailPageState extends State<DetailPage> {
       appBar: AppBar(title: Text(widget.animal.name)),
       body: Padding(
         padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -327,7 +352,16 @@ class DetailPageState extends State<DetailPage> {
                         ),
                       ),
                     );
-                    setState(() {});
+                    if (imageController.image != null) {
+                      final recognizedText = await recognizeText(
+                        imageController.image!,
+                      );
+                      final number = extractNIK(recognizedText);
+                      setState(() {
+                        recognizedNumber = number;
+                        _numberController.text = number;
+                      });
+                    }
                   },
                   iconSize: 30,
                   icon: const Icon(Icons.add, color: Colors.lightBlue),
@@ -335,7 +369,7 @@ class DetailPageState extends State<DetailPage> {
               ],
             ),
             SizedBox(height: 12),
-            if (imageController.image != null)
+            if (imageController.image != null) ...[
               ClipRect(
                 child: Image.file(
                   imageController.image!,
@@ -343,8 +377,21 @@ class DetailPageState extends State<DetailPage> {
                   height: 200,
                   fit: BoxFit.cover,
                 ),
-              )
+              ),
+            SizedBox(height: 15),
+            TextField(
+              controller: _numberController,
+              decoration: InputDecoration(
+                labelText: 'Number Found - Tap to edit',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                recognizedNumber =
+                    value; 
+              },
+            ),]
           ],
+        ),
         ),
       ),
       bottomNavigationBar: Padding(
@@ -417,7 +464,6 @@ class DetailPageState extends State<DetailPage> {
                   widget.animal.fecalStatus = fecalCheck;
                   widget.animal.fecalLocation = fecalLocation;
                   widget.animal.fecalTime = fecalTime;
-
 
                   print('Saving animal...');
                   await _saveToFirestore();
