@@ -49,14 +49,14 @@ class Animal {
   String? microchipNum;
 
 
-   static DateTime? _parseDate(dynamic value) {
+   static DateTime? _parseDate(dynamic value) { // firebase gets confused if you dont do this
     if (value == null) return null;
     if (value is Timestamp) return value.toDate();
     if (value is String) return DateTime.tryParse(value);
     return null;
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap() { // mapping for firebase
     return {
       'name': name,
       'vaccineStatus': vaccineStatus,

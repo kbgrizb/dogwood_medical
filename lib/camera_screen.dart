@@ -49,7 +49,7 @@ class _CameraScreenState extends State<CameraScreen> {
     return recognizedText.text;
   }
 
-  String extractNIK(String text) {
+  String extractNums(String text) {
     final regex = RegExp(r'\d+'); // Matches sequences of digits
     final matches = regex.allMatches(text);
     // Join all found digit sequences with commas, or modify logic as needed
@@ -86,7 +86,7 @@ class _CameraScreenState extends State<CameraScreen> {
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot.connectionState == ConnectionState.done) { // refer to https://github.com/kbgrizb/SnapShot-Journal for camera stuff
             return CameraPreview(_controller);
           } else {
             return const Center(child: CircularProgressIndicator());
@@ -96,30 +96,19 @@ class _CameraScreenState extends State<CameraScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           try {
-            // Ensure the camera is initialized
-            await _initializeControllerFuture;
+            await _initializeControllerFuture; // Ensure the camera is initialized
 
-            // Get the directory to save the picture
             final directory = await getApplicationDocumentsDirectory();
-            final imagePath = path.join(
+
+            final imagePath = path.join( // it says this isn't used but I'm too scared to delete it
               directory.path,
               'image_${DateTime.now()}.png',
             );
 
-            // Capture the image
-            final XFile image = await _controller.takePicture();
-
-            // Store the image in controller
-            widget.imageController.setImage(File(image.path));
-
-            // Recognize OCR text
+            final XFile image = await _controller.takePicture(); // Capture the image
+            widget.imageController.setImage(File(image.path)); // Store the image in controller
             final recognizedText = await recognizeText(File(image.path));
-
-            // Extract NIK/NPWP
-            final number = extractNIK(recognizedText);
-
-            // Print or handle the number as needed
-            print('Recognized number: $number');
+            final number = extractNums(recognizedText);
 
             await _controller.dispose();
 

@@ -34,7 +34,7 @@ class DetailPageState extends State<DetailPage> {
   TextEditingController _numberController = TextEditingController(text: '');
   String? microchipNum;
 
-  Future<String> recognizeText(File imageFile) async {
+  Future<String> recognizeText(File imageFile) async { // https://pub.dev/packages/google_mlkit_text_recognition
     final inputImage = InputImage.fromFile(imageFile);
     final textRecognizer = TextRecognizer();
     final RecognizedText recognizedText = await textRecognizer.processImage(
@@ -44,15 +44,14 @@ class DetailPageState extends State<DetailPage> {
     return recognizedText.text;
   }
 
-  String extractNIK(String text) {
-    final regex = RegExp(r'\d+'); // Matches sequences of digits
+  String extractNums(String text) {
+    final regex = RegExp(r'\d+'); // looks for numbers (digits) only
     final matches = regex.allMatches(text);
-    // Join all found digit sequences with commas, or modify logic as needed
-    return matches.map((m) => m.group(0)).join(', ');
+    return matches.map((m) => m.group(0)).join(', '); // separate different sets of numbers with commas in case extra numbers scanned. It's a little buggy, idk how to fix
   }
 
   @override
-  void initState() {
+  void initState() { // all of this is so if the info already exists in firestore database, that info is loaded here instead of starting empty
     super.initState();
     vaccineCheck = widget.animal.vaccineStatus;
     vaccineType = widget.animal.vaccineType;
@@ -72,16 +71,16 @@ class DetailPageState extends State<DetailPage> {
 
     microchipNum = widget.animal.microchipNum;
 
-    _numberController = TextEditingController(text: recognizedNumber ?? '');
+    _numberController = TextEditingController(text: recognizedNumber ?? ''); // if there is a microchip number found, put that here. If not, leave it empty
   }
 
   @override
-  void dispose() {
+  void dispose() { // get rid of controller and stuff when the detail page is destroyed
     _numberController.dispose();
     super.dispose();
   }
 
-  Future<void> _saveToFirestore() async {
+  Future<void> _saveToFirestore() async { // save all the animal's newly updated information to it's object in firestore
     final docRef = FirebaseFirestore.instance
         .collection('animals')
         .doc(widget.animal.id);
@@ -99,10 +98,9 @@ class DetailPageState extends State<DetailPage> {
     widget.animal.fecalTime = fecalTime;
     widget.animal.microchipNum = microchipNum;
 
-    // Save the animal document to Firestore
     try {
       await docRef.set(widget.animal.toMap(), SetOptions(merge: true));
-      print('Animal saved successfully');
+      print('Animal saved successfully'); // idk why it's telling me not to print stuff, but I'm leaving it because it helps with debugging
     } catch (e) {
       print('Error saving animal: $e');
     }
@@ -111,7 +109,7 @@ class DetailPageState extends State<DetailPage> {
   Future<void> _deleteFromFirestore() async {
     final docRef = FirebaseFirestore.instance
         .collection('animals')
-        .doc(widget.animal.id);
+        .doc(widget.animal.id); 
     await docRef.delete();
   }
 
@@ -351,8 +349,7 @@ class DetailPageState extends State<DetailPage> {
                   SizedBox(width: 12),
                   IconButton(
                     onPressed: () async {
-                      // Find the first available camera
-                      final cameras = await availableCameras();
+                      final cameras = await availableCameras(); // refer to previous work with cameras https://github.com/kbgrizb/SnapShot-Journal
                       final firstCamera = cameras.first;
 
                       await Navigator.push(
@@ -368,7 +365,7 @@ class DetailPageState extends State<DetailPage> {
                         final recognizedText = await recognizeText(
                           imageController.image!,
                         );
-                        final number = extractNIK(recognizedText);
+                        final number = extractNums(recognizedText);
                         setState(() {
                           recognizedNumber = number;
                           _numberController.text = number;
@@ -378,7 +375,7 @@ class DetailPageState extends State<DetailPage> {
                     iconSize: 30,
                     icon: const Icon(Icons.add, color: Colors.lightBlue),
                   ),
-                  if (microchipNum != null && microchipNum!.isNotEmpty) ...[
+                  if (microchipNum != null && microchipNum!.isNotEmpty) ...[ // if animal has a microchip # display it here
                     SizedBox(width: 12),
                     Text(
                       microchipNum!,
@@ -392,7 +389,7 @@ class DetailPageState extends State<DetailPage> {
                 ],
               ),
               SizedBox(height: 12),
-              if (imageController.image != null) ...[
+              if (imageController.image != null) ...[ // show image of microchip number for comparison to recognized text
                 ClipRect(
                   child: Image.file(
                     imageController.image!,
@@ -409,7 +406,7 @@ class DetailPageState extends State<DetailPage> {
                     border: OutlineInputBorder(),
                   ),
                   onChanged: (value) {
-                    recognizedNumber = value;
+                    recognizedNumber = value; // allow user to fix microchip number if needed
                   },
                 ),
               ],
@@ -428,7 +425,7 @@ class DetailPageState extends State<DetailPage> {
               FloatingActionButton.extended(
                 heroTag: "delete",
                 onPressed: () async {
-                  final confirmDelete = await showDialog<bool>(
+                  final confirmDelete = await showDialog<bool>( // confirm deletion dialog
                     context: context,
                     builder: (BuildContext context) => AlertDialog(
                       title: const Text('Confirm Deletion'),
@@ -471,7 +468,7 @@ class DetailPageState extends State<DetailPage> {
                 ),
               ),
               FloatingActionButton(
-                onPressed: () async {
+                onPressed: () async { // when you press save, update all the animal's info
                   widget.animal.vaccineStatus = vaccineCheck;
                   widget.animal.vaccineType = vaccineType;
                   widget.animal.vaccineTime = vaccineTime;
@@ -492,7 +489,7 @@ class DetailPageState extends State<DetailPage> {
                   microchipNum = recognizedNumber;
 
                   
-                  await _saveToFirestore();
+                  await _saveToFirestore(); // save all updates to firestore before closing page
                   Navigator.pop(context);
                 },
                 backgroundColor: Colors.lightBlue,

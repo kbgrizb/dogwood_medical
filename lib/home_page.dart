@@ -16,14 +16,14 @@ import 'src/authentication.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({super.key});
-
   final TextEditingController textController = TextEditingController();
-
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  String searchQuery = '';
+
   Future<void> handleNewAnimal(String animalName) async {
     Animal newAnimal = Animal(
       name: animalName,
@@ -35,7 +35,10 @@ class _HomePageState extends State<HomePage> {
 
     DocumentReference docRef = await FirebaseFirestore.instance
         .collection('animals')
-        .add({...newAnimal.toMap(), 'createdAt': FieldValue.serverTimestamp()});
+        .add({
+          ...newAnimal.toMap(), // add the new animal to collection
+          'createdAt': FieldValue.serverTimestamp(), // keep track of when animal was created to sort by most recent
+        }); 
     newAnimal.id = docRef.id;
   }
 
@@ -48,30 +51,50 @@ class _HomePageState extends State<HomePage> {
           return ListView(
             children: [
               const SizedBox(height: 8),
-              AuthFunc(
-                loggedIn: appState.loggedIn,
-                signOut: () {
-                  FirebaseAuth.instance.signOut();
-                },
+              Row(
+                children: [
+                  AuthFunc( // this is the login/logout button
+                    loggedIn: appState.loggedIn,
+                    signOut: () {
+                      FirebaseAuth.instance.signOut();
+                    },
+                  ),
+                  if (appState.loggedIn) SizedBox(width: 10), // only show search box if logged in
+                  Expanded(
+                    child: TextField(
+                      controller: widget.textController,
+                      decoration: InputDecoration(
+                        labelText: 'Search by name',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          searchQuery = value.toLowerCase(); // ignore case differences in search
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
+              SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 2.0,
                   horizontal: 10.0,
                 ),
-                child: StreamBuilder<QuerySnapshot>(
+                child: StreamBuilder<QuerySnapshot>( // build the list based on firestore database
                   stream: FirebaseFirestore.instance
                       .collection('animals')
-                      .orderBy('createdAt', descending: true)
+                      .orderBy('createdAt', descending: true) // order by most recently added
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
-                      return Text('Please log in to view animals');
+                      return Text('Please log in to view animals'); // if anything is going wrong, probably not logged in
                     }
                     if (!snapshot.hasData) {
                       return Center(child: CircularProgressIndicator());
                     }
-                    final animals = snapshot.data!.docs
+                    final animals = snapshot.data!.docs // create list of animals based on firestore data
                         .map(
                           (doc) => Animal.fromMap(
                             doc.data() as Map<String, dynamic>,
@@ -79,9 +102,12 @@ class _HomePageState extends State<HomePage> {
                           ),
                         )
                         .toList();
+                    final filteredAnimals = animals.where((animal) {
+                      return animal.name.toLowerCase().contains(searchQuery); // if something in search box, only show animals that contain letters from search
+                    }).toList();
 
                     return Column(
-                      children: animals.map((animal) {
+                      children: filteredAnimals.map((animal) {
                         return ListTile(
                           shape: RoundedRectangleBorder(
                             side: BorderSide(width: 2, color: Colors.lightBlue),
@@ -89,11 +115,11 @@ class _HomePageState extends State<HomePage> {
                           ),
                           title: Text(animal.name),
                           onTap: () async {
-                            dynamic result = await Navigator.push(
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    DetailPage(animal: animal),
+                                    DetailPage(animal: animal), // if animal tile is pressed, go to its page
                               ),
                             );
                           },
