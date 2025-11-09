@@ -1,12 +1,11 @@
-
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dogwood_app/animal.dart';
 import 'package:dogwood_app/camera_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-
 
 class DetailPage extends StatefulWidget {
   final Animal animal;
@@ -34,7 +33,8 @@ class DetailPageState extends State<DetailPage> {
   TextEditingController _numberController = TextEditingController(text: '');
   String? microchipNum;
 
-  Future<String> recognizeText(File imageFile) async { // https://pub.dev/packages/google_mlkit_text_recognition
+  Future<String> recognizeText(File imageFile) async {
+    // https://pub.dev/packages/google_mlkit_text_recognition
     final inputImage = InputImage.fromFile(imageFile);
     final textRecognizer = TextRecognizer();
     final RecognizedText recognizedText = await textRecognizer.processImage(
@@ -47,11 +47,16 @@ class DetailPageState extends State<DetailPage> {
   String extractNums(String text) {
     final regex = RegExp(r'\d+'); // looks for numbers (digits) only
     final matches = regex.allMatches(text);
-    return matches.map((m) => m.group(0)).join(', '); // separate different sets of numbers with commas in case extra numbers scanned. It's a little buggy, idk how to fix
+    return matches
+        .map((m) => m.group(0))
+        .join(
+          ', ',
+        ); // separate different sets of numbers with commas in case extra numbers scanned. It's a little buggy, idk how to fix
   }
 
   @override
-  void initState() { // all of this is so if the info already exists in firestore database, that info is loaded here instead of starting empty
+  void initState() {
+    // all of this is so if the info already exists in firestore database, that info is loaded here instead of starting empty
     super.initState();
     vaccineCheck = widget.animal.vaccineStatus;
     vaccineType = widget.animal.vaccineType;
@@ -71,16 +76,22 @@ class DetailPageState extends State<DetailPage> {
 
     microchipNum = widget.animal.microchipNum;
 
-    _numberController = TextEditingController(text: recognizedNumber ?? ''); // if there is a microchip number found, put that here. If not, leave it empty
+    _numberController = TextEditingController(
+      text: recognizedNumber ?? '',
+    ); // if there is a microchip number found, put that here. If not, leave it empty
+
+    updateLastViewed(widget.animal.id!);
   }
 
   @override
-  void dispose() { // get rid of controller and stuff when the detail page is destroyed
+  void dispose() {
+    // get rid of controller and stuff when the detail page is destroyed
     _numberController.dispose();
     super.dispose();
   }
 
-  Future<void> _saveToFirestore() async { // save all the animal's newly updated information to it's object in firestore
+  Future<void> _saveToFirestore() async {
+    // save all the animal's newly updated information to it's object in firestore
     final docRef = FirebaseFirestore.instance
         .collection('animals')
         .doc(widget.animal.id);
@@ -99,8 +110,11 @@ class DetailPageState extends State<DetailPage> {
     widget.animal.microchipNum = microchipNum;
 
     try {
-      await docRef.set(widget.animal.toMap(), SetOptions(merge: true));
-      print('Animal saved successfully'); // idk why it's telling me not to print stuff, but I'm leaving it because it helps with debugging
+      await docRef.set({
+        ...widget.animal.toMap(),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      print('Animal saved successfully');
     } catch (e) {
       print('Error saving animal: $e');
     }
@@ -109,12 +123,22 @@ class DetailPageState extends State<DetailPage> {
   Future<void> _deleteFromFirestore() async {
     final docRef = FirebaseFirestore.instance
         .collection('animals')
-        .doc(widget.animal.id); 
+        .doc(widget.animal.id);
     await docRef.delete();
   }
 
+  Future<void> updateLastViewed(String animalId) async {
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  final docRef = FirebaseFirestore.instance
+    .collection('users')
+    .doc(uid)
+    .collection('animalViews')
+    .doc(animalId);
 
-
+  await docRef.set({
+    'lastViewed': FieldValue.serverTimestamp(),
+  }, SetOptions(merge: true));
+}
 
   final List<String> vaccineTypes = ['DAP', 'DAPL', 'LEPTO', 'FVRCP', 'Other'];
 
@@ -352,7 +376,8 @@ class DetailPageState extends State<DetailPage> {
                   SizedBox(width: 12),
                   IconButton(
                     onPressed: () async {
-                      final cameras = await availableCameras(); // refer to previous work with cameras https://github.com/kbgrizb/SnapShot-Journal
+                      final cameras =
+                          await availableCameras(); // refer to previous work with cameras https://github.com/kbgrizb/SnapShot-Journal
                       final firstCamera = cameras.first;
 
                       await Navigator.push(
@@ -378,7 +403,8 @@ class DetailPageState extends State<DetailPage> {
                     iconSize: 30,
                     icon: const Icon(Icons.add, color: Color(0xFF0A5879)),
                   ),
-                  if (microchipNum != null && microchipNum!.isNotEmpty) ...[ // if animal has a microchip # display it here
+                  if (microchipNum != null && microchipNum!.isNotEmpty) ...[
+                    // if animal has a microchip # display it here
                     SizedBox(width: 12),
                     Text(
                       microchipNum!,
@@ -392,7 +418,8 @@ class DetailPageState extends State<DetailPage> {
                 ],
               ),
               SizedBox(height: 12),
-              if (imageController.image != null) ...[ // show image of microchip number for comparison to recognized text
+              if (imageController.image != null) ...[
+                // show image of microchip number for comparison to recognized text
                 ClipRect(
                   child: Image.file(
                     imageController.image!,
@@ -409,7 +436,8 @@ class DetailPageState extends State<DetailPage> {
                     border: OutlineInputBorder(),
                   ),
                   onChanged: (value) {
-                    recognizedNumber = value; // allow user to fix microchip number if needed
+                    recognizedNumber =
+                        value; // allow user to fix microchip number if needed
                   },
                 ),
               ],
@@ -428,7 +456,8 @@ class DetailPageState extends State<DetailPage> {
               FloatingActionButton.extended(
                 heroTag: "delete",
                 onPressed: () async {
-                  final confirmDelete = await showDialog<bool>( // confirm deletion dialog
+                  final confirmDelete = await showDialog<bool>(
+                    // confirm deletion dialog
                     context: context,
                     builder: (BuildContext context) => AlertDialog(
                       title: const Text('Confirm Deletion'),
@@ -471,7 +500,8 @@ class DetailPageState extends State<DetailPage> {
                 ),
               ),
               FloatingActionButton(
-                onPressed: () async { // when you press save, update all the animal's info
+                onPressed: () async {
+                  // when you press save, update all the animal's info
                   widget.animal.vaccineStatus = vaccineCheck;
                   widget.animal.vaccineType = vaccineType;
                   widget.animal.vaccineTime = vaccineTime;
@@ -491,7 +521,6 @@ class DetailPageState extends State<DetailPage> {
                   widget.animal.microchipNum = recognizedNumber;
                   microchipNum = recognizedNumber;
 
-                  
                   await _saveToFirestore(); // save all updates to firestore before closing page
                   Navigator.pop(context);
                 },

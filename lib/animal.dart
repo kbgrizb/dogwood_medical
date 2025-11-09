@@ -1,10 +1,7 @@
-
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Animal {
-  Animal(
-    {
+  Animal({
     this.id,
     required this.name,
 
@@ -25,7 +22,10 @@ class Animal {
     this.fecalTime,
 
     this.microchipNum,
-    });
+
+    this.lastUpdated,
+    this.lastViewed,
+  });
 
   String? id;
   final String name;
@@ -48,20 +48,26 @@ class Animal {
 
   String? microchipNum;
 
+  Timestamp? lastUpdated;
+  Timestamp? lastViewed;
 
-   static DateTime? _parseDate(dynamic value) { // firebase gets confused if you dont do this
+  static DateTime? _parseDate(dynamic value) {
+    // firebase gets confused if you dont do this
     if (value == null) return null;
     if (value is Timestamp) return value.toDate();
     if (value is String) return DateTime.tryParse(value);
     return null;
   }
 
-  Map<String, dynamic> toMap() { // mapping for firebase
+  Map<String, dynamic> toMap() {
+    // mapping for firebase
     return {
       'name': name,
       'vaccineStatus': vaccineStatus,
       'vaccineType': vaccineType,
-      'vaccineTime': vaccineTime != null ? Timestamp.fromDate(vaccineTime!) : null,
+      'vaccineTime': vaccineTime != null
+          ? Timestamp.fromDate(vaccineTime!)
+          : null,
       'dewormStatus': dewormStatus,
       'dewormType': dewormType,
       'dewormTime': dewormTime != null ? Timestamp.fromDate(dewormTime!) : null,
@@ -72,6 +78,8 @@ class Animal {
       'fecalLocation': fecalLocation,
       'fecalTime': fecalTime != null ? Timestamp.fromDate(fecalTime!) : null,
       'microchipNum': microchipNum,
+      'lastUpdated': lastUpdated,
+      'lastViewed': lastViewed,
     };
   }
 
@@ -92,7 +100,8 @@ class Animal {
       fecalLocation: map['fecalLocation'],
       fecalTime: _parseDate(map['fecalTime']),
       microchipNum: map['microchipNum'],
+      lastUpdated: map['lastUpdated'] is Timestamp ? map['lastUpdated'] as Timestamp : null,
+      lastViewed: map['lastViewed'] is Timestamp ? map['lastViewed'] as Timestamp : null,
     );
   }
-
 }
