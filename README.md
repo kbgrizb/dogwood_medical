@@ -1,16 +1,15 @@
-# dogwood_app
+# Dogwood Medical
 
-A new Flutter project.
+Dogwood Medical is an app created for Dogwood Animal Rescue Project to fascilitate the transfer 
+of medical information between the person who administers new treatments and the people who
+update the animal health records.
 
-## Getting Started
+## How to Use
 
-This project is a starting point for a Flutter application.
+1. Create an account and sign into the app.
+2. Press the plus button in the bottom right corner to add a new animal.
+3. Tap the animal's name to open its detail page.
+4. Use the pre-set choices to document any treatments given, fecal samples sent out, or microchip numbers.
+5. Press "SAVE" to save the information and notify other users of the changes.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+((WIP - Screenshots will be added))
